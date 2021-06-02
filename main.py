@@ -7,12 +7,14 @@ from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras import Model
 from tensorflow.keras.models import load_model
 from tensorflow.keras.layers import Input as KInput, Dense as KDense
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.losses import BinaryCrossentropy
 
 # Load data
 data = pd.read_csv("./train.csv")
 
 # Preprocess
-trainable = ["Pclass", "Age", "Parch", "Fare"]
+trainable = ["Pclass", "Age", "Parch", "SibSp", "Fare"]
 passengers = []
 survived = []
 scalers = []
@@ -36,22 +38,30 @@ passengers = np.array(passengers) # Values
 survived = np.array(survived) # Labels
 
 # Model
-new = True
+new = False
+train = True 
 
 if new:
 	model_input = KInput(len(trainable)+1) # Input
-	model_layer_0 = KDense(64, activation="relu")(model_input) # Hidden
-	model_output = KDense(1, activation="sigmoid")(model_layer_0) # Output
+	model_layer_0 = KDense(128, activation="relu")(model_input) # Hidden
+	model_layer_1 = KDense(32, activation="relu")(model_layer_0) # Hidden
+	model_output = KDense(1, activation="sigmoid")(model_layer_1) # Output
 
 	model = Model(inputs=model_input, outputs=model_output)
-	model.compile(optimizer='adam', loss='binary_crossentropy')
+	model.compile(optimizer="adam", loss="binary_crossentropy")
 
-	model.fit(x=passengers, y=survived, batch_size=10, epochs=100) # Training
+	model.fit(x=passengers, y=survived, batch_size=1, epochs=500) # Training
 	model.summary()
 
 	model.save("model")
 else:
 	model = load_model("model")
+
+	if train:
+		model.fit(x=passengers, y=survived, batch_size=1, epochs=250) # Training
+		model.summary()
+
+		model.save("model")
 
 def predict(data : np.array):
 	return np.round(model.predict(data.reshape(1, len(trainable)+1)))[0][0]
